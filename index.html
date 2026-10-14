@@ -4,6 +4,14 @@
 
 
 
+## [0.3.1] - 2026-10-14
+
+### Fixed
+
+- Corrected malformed Plant Journal and Next Day header buttons
+- Automatically initializes Topic 3 garden logic when Python starts, enabling planting without manually running the lesson
+- Garden tile clicks and Next Day now wait for Python initialization and display helpful errors
+
 ## [0.3.0] - 2026-10-14
 
 ### Added
@@ -120,21 +128,13 @@
 
         <div class="flex items-center gap-3 flex-wrap">
 
+            <button onclick="openPlantJournal()" class="bg-[#2a3825] hover:bg-[#34462e] border border-emerald-700/70 px-4 py-2 rounded-xl text-sm font-bold text-emerald-100 flex items-center gap-2">
+                📖 Plant Journal
+            </button>
 
-
-    <button     <button onclick="openPlantJournal()" class="bg-[#2a3825] hover:bg-[#34462e] border border-emerald-700/70 px-4 py-2 rounded-xl text-sm font-bold text-emerald-100 flex items-center gap-2">
-        📖 Plant Journal
-    </button>
-
-onclick="nextDay()"
-
-        class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded-xl text-sm font-bold text-white">
-
-        ☀️ Next Day
-
-    </button>
-
-
+            <button onclick="nextDay()" class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded-xl text-sm font-bold text-white">
+                ☀️ Next Day
+            </button>
 
     <div class="glass-panel px-4 py-2 rounded-xl flex flex-col items-end">
 
@@ -509,7 +509,7 @@ onclick="nextDay()"
 
         // =====================================================================
 
-        const APP_VERSION = "0.3.0";
+        const APP_VERSION = "0.3.1";
 
 
 
@@ -521,6 +521,7 @@ onclick="nextDay()"
 
         let displayActionHistory = [];
         let journalPythonReady = false;
+        let gardenPythonReady = false;
 
 
 
@@ -3398,7 +3399,12 @@ print("Resource Storage and Plant dropdown unlocked!")
 
         async function initPyodide() {
 
-            if (pyodideInstance) return;
+            if (pyodideInstance && gardenPythonReady) return;
+            if (pyodideInstance && !gardenPythonReady) {
+                await pyodideInstance.runPythonAsync(topicTemplates[3].code);
+                gardenPythonReady = true;
+                return;
+            }
 
             const consoleEl = document.getElementById("output-console");
 
@@ -3454,8 +3460,16 @@ print("Resource Storage and Plant dropdown unlocked!")
 
                 if (consoleEl) {
 
-                    consoleEl.innerHTML = `<span class="text-emerald-400">Python ready.</span><br>`;
+                    consoleEl.innerHTML = `<span class="text-emerald-400">Python ready. Initializing garden...</span><br>`;
 
+                }
+
+                // Topic 3 contains the actual garden state and planting/growth functions.
+                // Load it automatically so the game works without opening the code editor.
+                await pyodideInstance.runPythonAsync(topicTemplates[3].code);
+                gardenPythonReady = true;
+                if (consoleEl) {
+                    consoleEl.innerHTML = `<span class="text-emerald-400">Garden ready! Choose a plant and click an empty tile.</span><br>`;
                 }
 
             } catch (err) {
@@ -3465,7 +3479,8 @@ print("Resource Storage and Plant dropdown unlocked!")
                     consoleEl.innerHTML = `<span class="text-red-400">Failed to load Python: ${err.message}</span>`;
 
                 }
-
+                gardenPythonReady = false;
+                pyodideInstance = null;
                 throw err;
 
             }
@@ -3639,32 +3654,22 @@ print("Resource Storage and Plant dropdown unlocked!")
 
 
 
-        cell.onclick = function() {
+        cell.onclick = async function() {
+            try {
+                await initPyodide();
+                const selectedPlant = document.getElementById("crop-selector").value;
 
-            const selectedPlant =
-
-                document.getElementById("crop-selector").value;
-
-
-
-            if (gardenPlants[i]) {
-
-                pyodideInstance.runPythonAsync(
-
-                    `interact_with_plant(${i})`
-
-                );
-
-            } else if (selectedPlant) {
-
-                pyodideInstance.runPythonAsync(
-
-                    `plant_at_position(${i}, ${JSON.stringify(selectedPlant)})`
-
-                );
-
+                if (gardenPlants[i]) {
+                    await pyodideInstance.runPythonAsync(`interact_with_plant(${i})`);
+                } else if (selectedPlant) {
+                    await pyodideInstance.runPythonAsync(`plant_at_position(${i}, ${JSON.stringify(selectedPlant)})`);
+                } else {
+                    showToast("Choose a plant from the Seed Bag first!");
+                }
+            } catch (err) {
+                showToast("Garden action failed: " + err.message);
+                console.error(err);
             }
-
         };
 
 
