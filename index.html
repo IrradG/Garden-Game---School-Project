@@ -1,0 +1,3974 @@
+<!--
+
+# Changelog
+
+
+
+## [0.3.0] - 2026-10-14
+
+### Added
+
+- Plant Journal overlay with a plant catalog and four tree traversal views
+- Topic 4 now demonstrates BFS, DFS preorder, inorder, and postorder on a binary tree
+- Python-to-UI display bridges for plant entries and traversal results
+
+### Changed
+
+- Topic 4 uses a balanced binary tree built from the plant catalog
+
+## [0.2.0] - 2026-09-21
+
+### Added
+
+- Topic 1 (Action History Stack) and Topic 2 (Climate Queue) Python code
+
+### Changed
+
+- Student Code Editor is read-only; code is edited only in index.html
+
+### Removed
+
+- localStorage saving, so the editor always shows the code that is in index.html
+
+
+
+## [0.1.0] - 2026-09-21
+
+### Removed
+
+- Temporary unlock system (locked/unlocked classes, unlockFeature())
+
+- JS-side game logic and unused functions
+
+### Changed
+
+- Editor reorganized into 11 topic templates for hard-coded Python
+
+### Added
+
+- Semantic versioning (APP_VERSION constant and UI badge)
+
+-->
+
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Python-Based Garden Simulator</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.26.1/full/pyodide.js"></script>
+
+    <style>
+
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+        body {
+
+            font-family: 'Plus Jakarta Sans', sans-serif;
+
+            background-color: #1e261c;
+
+            color: #f3f4f6;
+
+        }
+
+        .code-font { font-family: 'JetBrains Mono', monospace; }
+
+        .glass-panel {
+
+            background: rgba(40, 54, 35, 0.45);
+
+            backdrop-filter: blur(12px);
+
+            border: 1px solid rgba(120, 143, 114, 0.2);
+
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+
+        }
+
+    </style>
+
+</head>
+
+<body class="min-h-screen p-4 flex flex-col justify-between overflow-x-hidden">
+
+    <header class="w-full max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 pb-2 border-b border-[#43533c]/40">
+
+        <div>
+
+            <div class="flex items-center gap-2">
+
+                <h1 class="text-2xl font-extrabold tracking-tight text-emerald-100">Python-Based Garden Simulator</h1>
+
+                <span id="version-badge" class="text-[10px] font-bold uppercase tracking-widest text-emerald-400/90 bg-emerald-950/50 border border-emerald-800/60 px-2 py-0.5 rounded-full"></span>
+
+            </div>
+
+            <p class="text-xs text-emerald-300/80 font-medium">SDG 2, 13, 15</p>
+
+        </div>
+
+        <div class="flex items-center gap-3 flex-wrap">
+
+
+
+    <button     <button onclick="openPlantJournal()" class="bg-[#2a3825] hover:bg-[#34462e] border border-emerald-700/70 px-4 py-2 rounded-xl text-sm font-bold text-emerald-100 flex items-center gap-2">
+        📖 Plant Journal
+    </button>
+
+onclick="nextDay()"
+
+        class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded-xl text-sm font-bold text-white">
+
+        ☀️ Next Day
+
+    </button>
+
+
+
+    <div class="glass-panel px-4 py-2 rounded-xl flex flex-col items-end">
+
+        <span class="text-[10px] text-emerald-400 uppercase tracking-widest font-bold">
+
+            DAY
+
+        </span>
+
+        <span class="text-lg font-extrabold text-white" id="day-counter">
+
+            1
+
+        </span>
+
+    </div>
+
+
+
+    <div class="glass-panel px-4 py-2 rounded-xl flex flex-col items-end">
+
+        <span class="text-[10px] text-emerald-400 uppercase tracking-widest font-bold">
+
+            SCORE
+
+        </span>
+
+        <span class="text-lg font-extrabold text-emerald-300" id="stewardship-counter">
+
+            0%
+
+        </span>
+
+    </div>
+
+
+
+</div>
+
+    </header>
+
+    <main class="w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-4 flex-grow">
+
+
+
+        <!-- LEFT: RESOURCES -->
+
+<section id="resources-section" class="lg:col-span-3 glass-panel rounded-2xl p-4">
+
+    <h2 class="text-base font-bold text-emerald-200 border-b border-[#43533c]/30 pb-2 mb-4 flex items-center gap-2">
+
+        <i data-lucide="database" class="w-4 h-4 text-emerald-400"></i> Resource Storage
+
+    </h2>
+
+
+
+    <div class="space-y-4">
+
+
+
+        <div>
+
+            <div class="flex justify-between text-xs font-semibold">
+
+                <span class="flex items-center gap-1.5 text-blue-300">
+
+                    Water Storage
+
+                </span>
+
+                <span id="water-text">0 / 200 L</span>
+
+            </div>
+
+
+
+            <div class="w-full bg-[#1b2219] h-2.5 rounded-full overflow-hidden">
+
+                <div id="water-bar"
+
+                    class="bg-gradient-to-r from-blue-500 to-cyan-400 h-full rounded-full"
+
+                    style="width: 0%">
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <div>
+
+            <div class="flex justify-between text-xs font-semibold">
+
+                <span class="flex items-center gap-1.5 text-emerald-300">
+
+                    Seed Inventory
+
+                </span>
+
+                <span id="seeds-text">0 / 100</span>
+
+            </div>
+
+
+
+            <div class="w-full bg-[#1b2219] h-2.5 rounded-full overflow-hidden">
+
+                <div id="seeds-bar"
+
+                    class="bg-gradient-to-r from-emerald-500 to-lime-400 h-full rounded-full"
+
+                    style="width: 0%">
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <div>
+
+            <div class="flex justify-between text-xs font-semibold">
+
+                <span class="flex items-center gap-1.5 text-amber-300">
+
+                    Solar Energy
+
+                </span>
+
+                <span id="energy-text">0 / 120 Wh</span>
+
+            </div>
+
+
+
+            <div class="w-full bg-[#1b2219] h-2.5 rounded-full overflow-hidden">
+
+                <div id="energy-bar"
+
+                    class="bg-gradient-to-r from-amber-500 to-yellow-300 h-full rounded-full"
+
+                    style="width: 0%">
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <div>
+
+            <div class="flex justify-between text-xs font-semibold">
+
+                <span class="flex items-center gap-1.5 text-rose-300">
+
+                    Community Hope
+
+                </span>
+
+                <span id="hope-text">0 / 100</span>
+
+            </div>
+
+
+
+            <div class="w-full bg-[#1b2219] h-2.5 rounded-full overflow-hidden">
+
+                <div id="hope-bar"
+
+                    class="bg-gradient-to-r from-rose-500 to-pink-400 h-full rounded-full"
+
+                    style="width: 0%">
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <div>
+
+            <div class="flex justify-between text-xs font-semibold">
+
+                <span class="flex items-center gap-1.5 text-yellow-200">
+
+                    Coins / Dues
+
+                </span>
+
+                <span id="coins-text" class="text-yellow-200">
+
+                    0 Coins
+
+                </span>
+
+            </div>
+
+        </div>
+
+
+
+    </div>
+
+</section>
+
+        <!-- CENTER -->
+
+        <section class="lg:col-span-6 flex flex-col gap-4">
+
+            <div class="flex bg-[#192218] p-1.5 rounded-xl border border-emerald-800/40 w-fit">
+
+                <button onclick="switchTab('game')" id="tab-game" class="px-4 py-1.5 rounded-lg text-xs font-bold bg-[#283623] text-emerald-100">Interactive Sanctuary</button>
+
+                <button onclick="switchTab('code')" id="tab-code" class="px-4 py-1.5 rounded-lg text-xs font-bold text-emerald-400/80 hover:text-emerald-100">Student Code Editor</button>
+
+            </div>
+
+
+
+            <div id="view-game" class="glass-panel rounded-2xl p-6 min-h-[380px]">
+
+                <div class="flex items-center justify-between mb-4">
+
+                    <div>
+
+                        <h2 class="text-lg font-bold text-white">Sanctuary Garden Grid</h2>
+
+                        <p class="text-xs text-emerald-300">Click empty soil tiles to plant.</p>
+
+                    </div>
+
+                    <div class="flex items-center gap-2">
+
+                        <span class="text-xs text-emerald-300">Seed Bag:</span>
+
+                        <select id="crop-selector" class="bg-[#1b2219] border border-emerald-700 text-emerald-100 text-sm rounded-xl px-3 py-2">
+
+                        </select>
+
+                    </div>
+
+                </div>
+
+                <div id="garden-grid" class="grid grid-cols-5 gap-3"></div>
+
+            </div>
+
+            <div id="view-code" class="glass-panel rounded-2xl p-6 flex flex-col flex-grow hidden">
+
+                <h2 class="font-bold mb-3 flex items-center gap-2">
+
+                    <i data-lucide="code" class="w-5 h-5 text-emerald-400"></i> Student Code Editor (Lab)
+
+                </h2>
+
+                <select id="topic-selector" onchange="loadTopic()" class="w-full bg-[#1b2219] border border-emerald-700 rounded-xl p-3 mb-4 text-sm"></select>
+
+                <textarea id="code-editor" readonly class="flex-1 bg-[#0a0f0a] border border-emerald-800 rounded-xl p-4 code-font text-sm font-medium leading-relaxed" spellcheck="false"></textarea>
+
+                <button onclick="runPythonCode()" class="mt-4 bg-emerald-600 hover:bg-emerald-500 py-3 rounded-xl font-bold text-white flex items-center justify-center gap-2">
+
+                    <i data-lucide="play" class="w-4 h-4"></i> Run Python Code
+
+                </button>
+
+                <div id="output-console" class="mt-4 bg-black/70 border border-emerald-900 rounded-xl p-4 text-xs max-h-48 overflow-auto font-mono whitespace-pre-wrap"></div>
+
+            </div>
+
+        </section>
+
+        <!-- RIGHT PANEL -->
+
+        <section class="lg:col-span-3 flex flex-col gap-4">
+
+            <div id="climate-queue-panel" class="glass-panel rounded-2xl p-4">
+
+                <h3 class="font-bold text-emerald-400 mb-3 flex items-center gap-2">
+
+                    <i data-lucide="cloud-lightning" class="w-4 h-4"></i> Climate Queue (FIFO)
+
+                </h3>
+
+                <div id="climate-queue" class="space-y-3 text-sm"></div>
+
+            </div>
+
+            <div id="stack-panel" class="glass-panel rounded-2xl p-4 flex-1 flex flex-col">
+
+                <h3 class="font-bold text-emerald-400 mb-3 flex items-center gap-2">
+
+                    <i data-lucide="history" class="w-4 h-4"></i> Action History (Stack)
+
+                </h3>
+
+                <div id="action-stack" class="flex-1 space-y-2 text-sm overflow-auto"></div>
+
+                <button onclick="triggerUndo()" class="mt-4 w-full bg-[#2a3825] hover:bg-[#34462e] text-emerald-200 py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 border border-emerald-800">
+
+                    <i data-lucide="undo-2" class="w-4 h-4"></i> Undo (Stack Pop)
+
+                </button>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- Plant Journal overlay: the Python code supplies entries and traversal results. -->
+    <div id="plant-journal-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 backdrop-blur-sm p-3 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="journal-title" onclick="if (event.target === this) closePlantJournal()">
+        <section class="glass-panel w-full max-w-5xl max-h-[92vh] overflow-y-auto rounded-2xl p-4 sm:p-6 border border-emerald-700/50" onclick="event.stopPropagation()">
+            <div class="flex items-start justify-between gap-4 mb-5">
+                <div>
+                    <p class="text-xs uppercase tracking-[0.2em] text-emerald-400 font-bold">Sanctuary Field Guide</p>
+                    <h2 id="journal-title" class="text-2xl font-extrabold text-emerald-100 mt-1">📖 Plant Journal</h2>
+                    <p class="text-sm text-emerald-200/70 mt-1">Your garden's plant collection and tree traversal explorer.</p>
+                </div>
+                <button onclick="closePlantJournal()" class="shrink-0 rounded-xl border border-emerald-800 px-3 py-2 text-emerald-100 hover:bg-emerald-950/70" aria-label="Close Plant Journal">✕</button>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-5">
+                <section class="lg:col-span-3">
+                    <div class="flex items-center justify-between gap-3 mb-3">
+                        <h3 class="font-bold text-emerald-200">🌱 Plant Collection</h3>
+                        <span id="journal-plant-count" class="text-xs text-emerald-400">Loading entries…</span>
+                    </div>
+                    <div id="journal-plant-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3"><p class="text-sm text-emerald-200/70">Opening the field guide…</p></div>
+                </section>
+                <section class="lg:col-span-2 rounded-2xl border border-emerald-900/80 bg-[#10170f]/70 p-4">
+                    <h3 class="font-bold text-emerald-200 mb-1">🌳 Tree Traversal Journal</h3>
+                    <p class="text-xs text-emerald-200/60 mb-4">Choose an algorithm to see the order in which the plant tree is visited.</p>
+                    <div class="grid grid-cols-2 gap-2 mb-4">
+                        <button onclick="selectTraversal('BFS')" class="traversal-button rounded-lg border border-emerald-800 bg-emerald-900/60 px-2 py-2 text-xs font-bold text-emerald-100" data-traversal="BFS">BFS / Level Order</button>
+                        <button onclick="selectTraversal('Preorder')" class="traversal-button rounded-lg border border-emerald-800 px-2 py-2 text-xs font-bold text-emerald-200 hover:bg-emerald-900/40" data-traversal="Preorder">DFS Preorder</button>
+                        <button onclick="selectTraversal('Inorder')" class="traversal-button rounded-lg border border-emerald-800 px-2 py-2 text-xs font-bold text-emerald-200 hover:bg-emerald-900/40" data-traversal="Inorder">DFS Inorder</button>
+                        <button onclick="selectTraversal('Postorder')" class="traversal-button rounded-lg border border-emerald-800 px-2 py-2 text-xs font-bold text-emerald-200 hover:bg-emerald-900/40" data-traversal="Postorder">DFS Postorder</button>
+                    </div>
+                    <p id="journal-traversal-description" class="text-xs leading-relaxed text-emerald-200/70 mb-3">BFS visits nodes level by level using a queue.</p>
+                    <ol id="journal-traversal-order" class="space-y-1.5 text-sm max-h-72 overflow-y-auto"><li class="text-emerald-200/60">Traversal results will appear here.</li></ol>
+                </section>
+            </div>
+            <p class="text-[11px] text-emerald-200/50 mt-5">BFS visits level by level. DFS preorder visits root-left-right, inorder visits left-root-right, and postorder visits left-right-root.</p>
+        </section>
+    </div>
+
+    <script>
+
+        // =====================================================================
+
+        // SEMANTIC VERSIONING (SemVer 2.0.0)
+
+        // Single source of truth. Do not hard-code the version elsewhere.
+
+        // MAJOR: breaking change (e.g. changing bridge function names/signatures that Python depends on)
+
+        // MINOR: new backward-compatible feature (e.g. finishing a new topic's code)
+
+        // PATCH: bug fix or small tweak with no new feature
+
+        // Use 0.x.y while in development; move to 1.0.0 once all 11 topics are complete.
+
+        // =====================================================================
+
+        const APP_VERSION = "0.3.0";
+
+
+
+        let pyodideInstance = null;
+
+        let gardenPlants = {};
+
+        // Display-only list of action labels (populated by Python via pushAction). No JS game logic.
+
+        let displayActionHistory = [];
+        let journalPythonReady = false;
+
+
+
+        // =====================================================================
+
+        // TOPIC TEMPLATES — paste your Python for each topic into the matching entry.
+
+        // Call the bridge functions from your Python to update the UI.
+
+        // =====================================================================
+
+
+
+
+
+        const topicTemplates = {
+
+            1: {
+
+                title: "Python OOP + Big O + Stacks",
+
+                code: `# Topic 1: Python OOP + Big O + Stacks
+
+# Topic 1: Python OOP + Big O + Stacks
+
+# Garden Action History and Undo System
+
+
+
+
+
+class ActionHistoryStack:
+
+    def __init__(self):
+
+        self.stack = []
+
+
+
+    def push_action(self, action):
+
+        self.stack.append(action)
+
+        pushAction(action)
+
+
+
+    def pop_action(self):
+
+        if self.stack:
+
+            return self.stack.pop()
+
+
+
+        return None
+
+
+
+    def peek_action(self):
+
+        if self.stack:
+
+            return self.stack[-1]
+
+
+
+        return None
+
+
+
+    def show_history(self):
+
+        print("📜 Action History:")
+
+
+
+        if not self.stack:
+
+            print("No actions yet.")
+
+            return
+
+
+
+        for action in self.stack:
+
+            print("-", action)
+
+
+
+
+
+# Create action history
+
+history = ActionHistoryStack()
+
+
+
+
+
+# Garden actions
+
+history.push_action("Planted Daisy")
+
+history.push_action("Watered Daisy")
+
+history.push_action("Planted Sunflower")
+
+history.push_action("Harvested Oregano")
+
+
+
+
+
+print("📜 Garden Action History")
+
+print()
+
+
+
+history.show_history()
+
+
+
+
+
+# Show latest action
+
+print()
+
+print("Latest Action:", history.peek_action())
+
+
+
+
+
+# Undo latest action
+
+print()
+
+print("↩️ Undoing latest action...")
+
+
+
+undone = history.pop_action()
+
+
+
+if undone:
+
+    print("Undone:", undone)
+
+
+
+
+
+print()
+
+history.show_history()
+
+
+
+
+
+print()
+
+print("Garden Action History is ready!")
+
+`
+
+            },
+
+            2: {
+
+                title: "Queues & Deques (FIFO Elements)",
+
+                code: `# Topic 2: Queues & Deques (FIFO Elements)
+
+# Topic 2: Queues & Deques (FIFO Elements)
+
+# Garden Climate Event System
+
+
+
+from collections import deque
+
+
+
+
+
+class ClimateQueue:
+
+    def __init__(self):
+
+        self.events = deque()
+
+
+
+    def add_event(self, event):
+
+        self.events.append(event)
+
+
+
+    def process_event(self):
+
+        if self.events:
+
+            return self.events.popleft()
+
+
+
+        return None
+
+
+
+    def show_events(self):
+
+        print("🌦️ Climate Queue:")
+
+
+
+        for event in self.events:
+
+            print("-", event)
+
+
+
+
+
+# Create the climate queue
+
+climate = ClimateQueue()
+
+
+
+
+
+# Add garden events
+
+climate.add_event("🌧️ Rain")
+
+climate.add_event("☀️ Drought")
+
+climate.add_event("🔥 Heat Wave")
+
+climate.add_event("🌊 Flash Flood")
+
+
+
+
+
+print("🌦️ Garden Climate System")
+
+print()
+
+
+
+climate.show_events()
+
+
+
+
+
+# Process the first event
+
+print()
+
+print("Processing climate event...")
+
+
+
+event = climate.process_event()
+
+
+
+if event:
+
+    print("Current Event:", event)
+
+
+
+
+
+print()
+
+print("Remaining Events:")
+
+climate.show_events()
+
+
+
+
+
+print()
+
+print("Climate Queue is ready!")
+
+`
+
+            },
+
+            3: {
+
+                title: "Static/Dynamic Arrays, 2D Lists, & Memory Structures",
+
+                code: `# Topic 3: Static/Dynamic Arrays, 2D Lists, & Memory Structures
+
+
+
+# Topic 3: Static/Dynamic Arrays, 2D Lists, & Memory Structures
+
+
+
+# Interactive Garden Grid + Planting, Growth, and Harvesting
+
+
+
+
+
+# Current garden day
+
+current_day = 1
+
+
+
+
+
+# Garden grid
+
+garden_grid = [
+
+    [None, None, None, None, None],
+
+    [None, None, None, None, None],
+
+    [None, None, None, None, None],
+
+    [None, None, None, None, None],
+
+    [None, None, None, None, None]
+
+]
+
+
+
+
+
+# Growth information for each garden position
+
+growth_days = [
+
+    [0, 0, 0, 0, 0],
+
+    [0, 0, 0, 0, 0],
+
+    [0, 0, 0, 0, 0],
+
+    [0, 0, 0, 0, 0],
+
+    [0, 0, 0, 0, 0]
+
+]
+
+
+
+
+
+# Plant information
+
+plants = {
+
+    "Oregano": ("🌿", 15, 10, 5, 15),
+
+    "Daisy": ("🌼", 25, 20, 10, 25),
+
+    "Cattail": ("🌾", 30, 25, 10, 30),
+
+    "Cherry Blossom": ("🌸", 50, 30, 20, 50),
+
+    "Sunflower": ("🌻", 40, 25, 15, 40),
+
+    "Tulip": ("🌷", 35, 20, 15, 35),
+
+    "Rose": ("🌹", 45, 30, 20, 45),
+
+    "Lavender": ("💜", 20, 15, 10, 20),
+
+    "Bamboo": ("🎋", 60, 40, 25, 60),
+
+    "Cactus": ("🌵", 55, 10, 20, 55),
+
+    "Hibiscus": ("🌺", 40, 25, 15, 40),
+
+    "Lotus": ("🪷", 65, 45, 30, 65)
+
+}
+
+
+
+
+
+# Starting resources
+
+water = 200
+
+seeds = 90
+
+energy = 110
+
+hope = 80
+
+coins = 999
+
+
+
+
+
+# Show plants in the dropdown
+
+plant_choices = []
+
+
+
+for name in plants:
+
+    emoji = plants[name][0]
+
+    cost = plants[name][4]
+
+
+
+    plant_choices.append(
+
+        (name, emoji, cost)
+
+    )
+
+
+
+addPlantsToDropdown(plant_choices)
+
+
+
+
+
+# Show starting resources
+
+updateResources(
+
+    water,
+
+    seeds,
+
+    energy,
+
+    hope,
+
+    coins
+
+)
+
+
+
+
+
+# Show starting day
+
+updateDay(current_day)
+
+
+
+
+
+def plant_at_position(position, plant_name):
+
+    global water
+
+    global seeds
+
+    global energy
+
+    global hope
+
+    global coins
+
+
+
+    row = position // 5
+
+    column = position % 5
+
+
+
+    # Check if the position is occupied
+
+    if garden_grid[row][column] is not None:
+
+        print("That garden space is already occupied!")
+
+        return
+
+
+
+    # Check if the plant exists
+
+    if plant_name not in plants:
+
+        print("Plant not found!")
+
+        return
+
+
+
+    plant = plants[plant_name]
+
+
+
+    emoji = plant[0]
+
+    seed_cost = plant[1]
+
+    water_cost = plant[2]
+
+    energy_cost = plant[3]
+
+    coin_cost = plant[4]
+
+
+
+    # Check resources
+
+    if seeds < seed_cost:
+
+        print("Not enough seeds!")
+
+        return
+
+
+
+    if water < water_cost:
+
+        print("Not enough water!")
+
+        return
+
+
+
+    if energy < energy_cost:
+
+        print("Not enough energy!")
+
+        return
+
+
+
+    if coins < coin_cost:
+
+        print("Not enough coins!")
+
+        return
+
+
+
+    # Spend resources
+
+    seeds -= seed_cost
+
+    water -= water_cost
+
+    energy -= energy_cost
+
+    coins -= coin_cost
+
+
+
+    hope += 5
+
+
+
+    # Store plant name in the 2D list
+
+    garden_grid[row][column] = plant_name
+
+
+
+    # Start growth at Day 1
+
+    growth_days[row][column] = 1
+
+
+
+    # Show young plant
+
+    addPlantToGrid(position, "🌱")
+
+
+
+    # Update resources
+
+    updateResources(
+
+        water,
+
+        seeds,
+
+        energy,
+
+        hope,
+
+        coins
+
+    )
+
+
+
+    pushAction("Planted " + plant_name)
+
+
+
+    print()
+
+    print("🌱 Successfully planted:", plant_name)
+
+    print("Garden Position:", position)
+
+    print("Growth: 1 / 3")
+
+    print("Press Next Day to continue growing.")
+
+    print()
+
+
+
+
+
+def next_day():
+
+    global current_day
+
+    global water
+
+    global energy
+
+
+
+    # Advance the garden day
+
+    current_day += 1
+
+
+
+    # Small daily resource recovery
+
+    water += 10
+
+    energy += 5
+
+
+
+    # Keep resources within their maximum values
+
+    if water > 200:
+
+        water = 200
+
+
+
+    if energy > 120:
+
+        energy = 120
+
+
+
+    # Grow every planted crop
+
+    for row in range(5):
+
+        for column in range(5):
+
+
+
+            if garden_grid[row][column] is not None:
+
+
+
+                if growth_days[row][column] < 3:
+
+                    growth_days[row][column] += 1
+
+
+
+                position = row * 5 + column
+
+                plant_name = garden_grid[row][column]
+
+
+
+                # Show growth stage
+
+                if growth_days[row][column] == 1:
+
+                    addPlantToGrid(position, "🌱")
+
+
+
+                elif growth_days[row][column] == 2:
+
+                    addPlantToGrid(position, "🌿")
+
+
+
+                else:
+
+                    addPlantToGrid(
+
+                        position,
+
+                        plants[plant_name][0]
+
+                    )
+
+
+
+    # Update the day display
+
+    updateDay(current_day)
+
+
+
+    # Update resources
+
+    updateResources(
+
+        water,
+
+        seeds,
+
+        energy,
+
+        hope,
+
+        coins
+
+    )
+
+
+
+    pushAction("Advanced to Day " + str(current_day))
+
+
+
+    print()
+
+    print("☀️ A new garden day has begun!")
+
+    print("Garden Day:", current_day)
+
+    print()
+
+    print("🌱 Plant growth:")
+
+
+
+    for row in range(5):
+
+        for column in range(5):
+
+
+
+            if garden_grid[row][column] is not None:
+
+
+
+                plant_name = garden_grid[row][column]
+
+                growth = growth_days[row][column]
+
+
+
+                if growth < 3:
+
+                    print(
+
+                        "-", plant_name,
+
+                        "Growth:", growth, "/ 3"
+
+                    )
+
+                else:
+
+                    print(
+
+                        "-", plant_name,
+
+                        "🌼 READY TO HARVEST!"
+
+                    )
+
+
+
+    print()
+
+
+
+
+
+def interact_with_plant(position):
+
+    global seeds
+
+    global hope
+
+    global coins
+
+
+
+    row = position // 5
+
+    column = position % 5
+
+
+
+    plant_name = garden_grid[row][column]
+
+
+
+    # Empty space
+
+    if plant_name is None:
+
+        print("There is no plant here.")
+
+        return
+
+
+
+    growth = growth_days[row][column]
+
+
+
+    # Still growing
+
+    if growth < 3:
+
+        print()
+
+        print("🌱", plant_name, "is still growing.")
+
+        print("Growth:", growth, "/ 3")
+
+        print("Press Next Day to continue growing.")
+
+        print()
+
+        return
+
+
+
+    # Harvest
+
+    plant = plants[plant_name]
+
+
+
+    seed_reward = 10
+
+    coin_reward = plant[4] * 2
+
+    hope_reward = 10
+
+
+
+    seeds += seed_reward
+
+    coins += coin_reward
+
+    hope += hope_reward
+
+
+
+    # Empty the garden space
+
+    garden_grid[row][column] = None
+
+    growth_days[row][column] = 0
+
+
+
+    # Clear the garden tile
+
+    addPlantToGrid(position, "")
+
+
+
+    # Update resources
+
+    updateResources(
+
+        water,
+
+        seeds,
+
+        energy,
+
+        hope,
+
+        coins
+
+    )
+
+
+
+    pushAction("Harvested " + plant_name)
+
+
+
+    print()
+
+    print("🧺 Harvested:", plant_name)
+
+    print("🌱 Seeds gained:", seed_reward)
+
+    print("💰 Coins gained:", coin_reward)
+
+    print("💚 Hope gained:", hope_reward)
+
+    print()
+
+    print("The garden space is now empty!")
+
+    print()
+
+
+
+
+
+print("🌱 Interactive Garden Grid is ready!")
+
+print("Choose a plant, then click an empty garden tile.")
+
+print("☀️ Press Next Day to grow your plants.")
+
+print("🌼 Plants are ready to harvest at Growth 3 / 3!")
+
+`
+
+            },
+
+            4: {
+                title: "Hierarchical Trees & Traversals — Plant Journal",
+                code: `# Topic 4: Hierarchical Trees & Traversals
+# Plant Journal: BFS and DFS tree traversals
+
+from collections import deque
+import json
+
+
+class GardenNode:
+    def __init__(self, name, emoji, description, care):
+        self.name = name
+        self.emoji = emoji
+        self.description = description
+        self.care = care
+        self.left = None
+        self.right = None
+
+
+def build_balanced_tree(plant_list):
+    if not plant_list:
+        return None
+
+    middle = len(plant_list) // 2
+    plant = plant_list[middle]
+    node = GardenNode(plant[0], plant[1], plant[2], plant[3])
+    node.left = build_balanced_tree(plant_list[:middle])
+    node.right = build_balanced_tree(plant_list[middle + 1:])
+    return node
+
+
+def bfs(root):
+    result = []
+    queue = deque()
+    if root:
+        queue.append(root)
+
+    while queue:
+        node = queue.popleft()
+        result.append(node.name)
+        if node.left:
+            queue.append(node.left)
+        if node.right:
+            queue.append(node.right)
+    return result
+
+
+def preorder(node, result):
+    if node:
+        result.append(node.name)
+        preorder(node.left, result)
+        preorder(node.right, result)
+
+
+def inorder(node, result):
+    if node:
+        inorder(node.left, result)
+        result.append(node.name)
+        inorder(node.right, result)
+
+
+def postorder(node, result):
+    if node:
+        postorder(node.left, result)
+        postorder(node.right, result)
+        result.append(node.name)
+
+
+# Plant entries: name, emoji, short description, care guide
+plant_entries = [
+    ("Bamboo", "🎋", "A fast-growing plant that adds greenery and habitat.", "Water: High | Sunlight: Partial"),
+    ("Cactus", "🌵", "A water-saving plant suited to dry conditions.", "Water: Low | Sunlight: High"),
+    ("Cattail", "🌾", "A wetland plant that supports pond and marsh habitats.", "Water: High | Sunlight: High"),
+    ("Cherry Blossom", "🌸", "A flowering tree known for its seasonal blossoms.", "Water: Moderate | Sunlight: High"),
+    ("Daisy", "🌼", "A cheerful flower that brings color to the sanctuary.", "Water: Moderate | Sunlight: High"),
+    ("Hibiscus", "🌺", "A tropical flowering plant with bright blooms.", "Water: High | Sunlight: High"),
+    ("Lavender", "💜", "An aromatic flowering herb that attracts pollinators.", "Water: Low | Sunlight: High"),
+    ("Lotus", "🪷", "An aquatic flower that grows in calm, shallow water.", "Water: High | Sunlight: High"),
+    ("Oregano", "🌿", "A useful culinary herb with fragrant leaves.", "Water: Moderate | Sunlight: High"),
+    ("Rose", "🌹", "A classic flowering plant with layered petals.", "Water: Moderate | Sunlight: High"),
+    ("Sunflower", "🌻", "A tall flower that turns the garden into a sunny space.", "Water: Moderate | Sunlight: High"),
+    ("Tulip", "🌷", "A spring flower with a distinctive cup-shaped bloom.", "Water: Moderate | Sunlight: Partial")
+]
+
+# The sorted plant list forms a balanced binary tree.
+plant_entries.sort()
+garden_root = build_balanced_tree(plant_entries)
+
+# Send plant-card data to the journal overlay.
+plant_cards = []
+for plant in plant_entries:
+    plant_cards.append({
+        "name": plant[0],
+        "emoji": plant[1],
+        "description": plant[2],
+        "care": plant[3]
+    })
+updatePlantJournal(json.dumps(plant_cards))
+
+
+def show_traversal(order):
+    result = []
+    if order == "BFS":
+        result = bfs(garden_root)
+    elif order == "Preorder":
+        preorder(garden_root, result)
+    elif order == "Inorder":
+        inorder(garden_root, result)
+    elif order == "Postorder":
+        postorder(garden_root, result)
+
+    updateTraversalJournal(order, json.dumps(result))
+    print(order + " traversal:")
+    for name in result:
+        print("- " + name)
+
+
+print("Plant Journal ready!")
+print("Binary tree contains", len(plant_entries), "plant entries.")
+show_traversal("BFS")
+`
+            },
+            5: {
+
+                title: "Binary Search Trees (BST) & Node Mutation",
+
+                code: `# Topic 5: Binary Search Trees (BST) & Node Mutation
+
+
+
+# Topic 5: Binary Search Trees (BST) & Node Mutation
+
+# Garden Plant Value Tree
+
+
+
+
+
+class PlantNode:
+
+    def __init__(self, name, value):
+
+        self.name = name
+
+        self.value = value
+
+        self.left = None
+
+        self.right = None
+
+
+
+
+
+class PlantBST:
+
+    def __init__(self):
+
+        self.root = None
+
+
+
+    def insert(self, name, value):
+
+        new_node = PlantNode(name, value)
+
+
+
+        if self.root is None:
+
+            self.root = new_node
+
+            return
+
+
+
+        current = self.root
+
+
+
+        while True:
+
+            if value < current.value:
+
+                if current.left is None:
+
+                    current.left = new_node
+
+                    return
+
+                current = current.left
+
+
+
+            else:
+
+                if current.right is None:
+
+                    current.right = new_node
+
+                    return
+
+                current = current.right
+
+
+
+    def search(self, value):
+
+        current = self.root
+
+
+
+        while current is not None:
+
+            if current.value == value:
+
+                return current
+
+
+
+            if value < current.value:
+
+                current = current.left
+
+            else:
+
+                current = current.right
+
+
+
+        return None
+
+
+
+    def inorder(self, node):
+
+        if node is not None:
+
+            self.inorder(node.left)
+
+            print(node.name, "-", node.value, "coins")
+
+            self.inorder(node.right)
+
+
+
+
+
+# Create the plant tree
+
+plant_tree = PlantBST()
+
+
+
+plant_tree.insert("Daisy", 25)
+
+plant_tree.insert("Oregano", 15)
+
+plant_tree.insert("Rose", 45)
+
+plant_tree.insert("Sunflower", 40)
+
+plant_tree.insert("Lotus", 65)
+
+plant_tree.insert("Bamboo", 60)
+
+
+
+
+
+print("🌳 Garden Plant Value Tree")
+
+print()
+
+print("Plants from lowest to highest value:")
+
+
+
+plant_tree.inorder(plant_tree.root)
+
+
+
+
+
+# Search for a plant value
+
+print()
+
+search_value = 45
+
+
+
+found = plant_tree.search(search_value)
+
+
+
+if found:
+
+    print("🔎 Found:", found.name)
+
+    print("Current Value:", found.value, "coins")
+
+
+
+
+
+# Node mutation
+
+print()
+
+print("🌱 Updating Rose value...")
+
+
+
+rose = plant_tree.search(45)
+
+
+
+if rose:
+
+    rose.value = 50
+
+    print("Rose value changed to", rose.value, "coins")
+
+
+
+
+
+print()
+
+print("Updated Plant Tree:")
+
+
+
+plant_tree.inorder(plant_tree.root)
+
+
+
+print()
+
+print("Binary Search Tree is ready!")
+
+`
+
+            },
+
+            6: {
+
+                title: "Hash Tables, Collisions, & Rehashing",
+
+                code: `# Topic 6: Hash Tables, Collisions, & Rehashing
+
+
+
+# Topic 6: Hash Tables, Collisions, & Rehashing
+
+# Garden Plant Inventory
+
+
+
+
+
+class GardenHashTable:
+
+    def __init__(self, size):
+
+        self.size = size
+
+        self.table = [[] for _ in range(size)]
+
+
+
+    def hash_function(self, key):
+
+        total = 0
+
+
+
+        for letter in key:
+
+            total += ord(letter)
+
+
+
+        return total % self.size
+
+
+
+    def insert(self, name, seed_cost, coin_value):
+
+        index = self.hash_function(name)
+
+
+
+        for item in self.table[index]:
+
+            if item[0] == name:
+
+                item[1] = seed_cost
+
+                item[2] = coin_value
+
+                return
+
+
+
+        self.table[index].append(
+
+            [name, seed_cost, coin_value]
+
+        )
+
+
+
+    def search(self, name):
+
+        index = self.hash_function(name)
+
+
+
+        for item in self.table[index]:
+
+            if item[0].lower() == name.lower():
+
+                return item
+
+
+
+        return None
+
+
+
+    def show_table(self):
+
+        print("=== Garden Hash Table ===")
+
+
+
+        for index in range(self.size):
+
+            print(index, ":", self.table[index])
+
+
+
+
+
+# Create plant inventory
+
+inventory = GardenHashTable(7)
+
+
+
+
+
+# Add plants
+
+inventory.insert("Daisy", 25, 25)
+
+inventory.insert("Oregano", 15, 15)
+
+inventory.insert("Rose", 45, 45)
+
+inventory.insert("Lotus", 65, 65)
+
+inventory.insert("Cactus", 55, 55)
+
+inventory.insert("Bamboo", 60, 60)
+
+
+
+
+
+print("📦 Garden Plant Inventory")
+
+print()
+
+
+
+inventory.show_table()
+
+
+
+
+
+# Search for a plant
+
+print()
+
+search_name = "Daisy"
+
+
+
+found = inventory.search(search_name)
+
+
+
+if found:
+
+    print("🔎 Plant Found!")
+
+    print("Name:", found[0])
+
+    print("Seed Cost:", found[1])
+
+    print("Coin Value:", found[2])
+
+else:
+
+    print("Plant not found.")
+
+
+
+
+
+# Add another plant
+
+inventory.insert("Sunflower", 40, 40)
+
+
+
+print()
+
+print("🌻 Sunflower added to the inventory!")
+
+
+
+inventory.show_table()
+
+
+
+print()
+
+print("Hash Table is ready for fast plant lookup!")
+
+`
+
+            },
+
+            7: {
+
+                title: "Graph Foundations, Adjacency Matrices/Lists, & DFS/BFS",
+
+                code: `# Topic 7: Graph Foundations, Adjacency Matrices/Lists, & DFS/BFS
+
+
+
+# Topic 7: Graph Foundations, Adjacency Lists, & DFS/BFS
+
+# Garden Exploration System
+
+
+
+
+
+# Garden map
+
+garden_map = {
+
+    "Entrance": ["Flower Garden", "Pond"],
+
+    "Flower Garden": ["Entrance", "Herb Garden"],
+
+    "Pond": ["Entrance", "Herb Garden"],
+
+    "Herb Garden": ["Flower Garden", "Pond", "Seed Storage"],
+
+    "Seed Storage": ["Herb Garden"]
+
+}
+
+
+
+
+
+# Display the garden connections
+
+print("🌿 Garden Map")
+
+print()
+
+
+
+for place in garden_map:
+
+    print(place, "connects to:")
+
+
+
+    for connected_place in garden_map[place]:
+
+        print("-", connected_place)
+
+
+
+    print()
+
+
+
+
+
+# Breadth-First Search
+
+def bfs(graph, start):
+
+    queue = [start]
+
+    visited = []
+
+
+
+    while queue:
+
+        current = queue.pop(0)
+
+
+
+        if current not in visited:
+
+            visited.append(current)
+
+
+
+            for neighbor in graph[current]:
+
+                if neighbor not in visited:
+
+                    queue.append(neighbor)
+
+
+
+    return visited
+
+
+
+
+
+# Depth-First Search
+
+def dfs(graph, start):
+
+    stack = [start]
+
+    visited = []
+
+
+
+    while stack:
+
+        current = stack.pop()
+
+
+
+        if current not in visited:
+
+            visited.append(current)
+
+
+
+            for neighbor in graph[current]:
+
+                if neighbor not in visited:
+
+                    stack.append(neighbor)
+
+
+
+    return visited
+
+
+
+
+
+# Explore the garden using BFS
+
+bfs_result = bfs(garden_map, "Entrance")
+
+
+
+print("🔎 BFS Garden Exploration")
+
+print()
+
+
+
+for place in bfs_result:
+
+    print("Visited:", place)
+
+
+
+
+
+# Explore the garden using DFS
+
+dfs_result = dfs(garden_map, "Entrance")
+
+
+
+print()
+
+print("🌱 DFS Garden Exploration")
+
+print()
+
+
+
+for place in dfs_result:
+
+    print("Visited:", place)
+
+
+
+
+
+print()
+
+print("Garden exploration complete!")
+
+print("BFS explores nearby areas first.")
+
+print("DFS explores deeper paths first.")
+
+`
+
+            },
+
+            8: {
+
+                title: "Sorting Algorithms (Bubble, Insertion, Selection, Quick, & Merge Sort)",
+
+                code: `# Topic 8: Sorting Algorithms (Bubble, Insertion, Selection, Quick, & Merge Sort)
+
+
+
+# Topic 8: Sorting Algorithms
+
+# Bubble, Insertion, Selection, Quick, and Merge Sort
+
+# Garden Plant Organization
+
+
+
+
+
+# Plant data
+
+plants = [
+
+    ("Oregano", 15, 10, 15),
+
+    ("Daisy", 25, 20, 25),
+
+    ("Cattail", 30, 25, 30),
+
+    ("Cherry Blossom", 50, 30, 50),
+
+    ("Sunflower", 40, 25, 40),
+
+    ("Tulip", 35, 20, 35),
+
+    ("Rose", 45, 30, 45),
+
+    ("Lavender", 20, 15, 20),
+
+    ("Bamboo", 60, 40, 60),
+
+    ("Cactus", 55, 10, 55),
+
+    ("Hibiscus", 40, 25, 40),
+
+    ("Lotus", 65, 45, 65)
+
+]
+
+
+
+
+
+# Bubble Sort
+
+def bubble_sort(items):
+
+    result = items.copy()
+
+
+
+    for i in range(len(result)):
+
+        for j in range(0, len(result) - i - 1):
+
+            if result[j][1] > result[j + 1][1]:
+
+                result[j], result[j + 1] = result[j + 1], result[j]
+
+
+
+    return result
+
+
+
+
+
+# Insertion Sort
+
+def insertion_sort(items):
+
+    result = items.copy()
+
+
+
+    for i in range(1, len(result)):
+
+        current = result[i]
+
+        position = i - 1
+
+
+
+        while position >= 0 and result[position][1] > current[1]:
+
+            result[position + 1] = result[position]
+
+            position -= 1
+
+
+
+        result[position + 1] = current
+
+
+
+    return result
+
+
+
+
+
+# Selection Sort
+
+def selection_sort(items):
+
+    result = items.copy()
+
+
+
+    for i in range(len(result)):
+
+        smallest = i
+
+
+
+        for j in range(i + 1, len(result)):
+
+            if result[j][1] < result[smallest][1]:
+
+                smallest = j
+
+
+
+        result[i], result[smallest] = result[smallest], result[i]
+
+
+
+    return result
+
+
+
+
+
+# Quick Sort
+
+def quick_sort(items):
+
+    if len(items) <= 1:
+
+        return items
+
+
+
+    pivot = items[0]
+
+
+
+    smaller = []
+
+    larger = []
+
+
+
+    for item in items[1:]:
+
+        if item[1] <= pivot[1]:
+
+            smaller.append(item)
+
+        else:
+
+            larger.append(item)
+
+
+
+    return quick_sort(smaller) + [pivot] + quick_sort(larger)
+
+
+
+
+
+# Merge Sort
+
+def merge_sort(items):
+
+    if len(items) <= 1:
+
+        return items
+
+
+
+    middle = len(items) // 2
+
+
+
+    left = merge_sort(items[:middle])
+
+    right = merge_sort(items[middle:])
+
+
+
+    result = []
+
+
+
+    left_index = 0
+
+    right_index = 0
+
+
+
+    while left_index < len(left) and right_index < len(right):
+
+        if left[left_index][1] <= right[right_index][1]:
+
+            result.append(left[left_index])
+
+            left_index += 1
+
+        else:
+
+            result.append(right[right_index])
+
+            right_index += 1
+
+
+
+    while left_index < len(left):
+
+        result.append(left[left_index])
+
+        left_index += 1
+
+
+
+    while right_index < len(right):
+
+        result.append(right[right_index])
+
+        right_index += 1
+
+
+
+    return result
+
+
+
+
+
+# Display original catalog
+
+print("🌸 Garden Plant Sorting")
+
+print()
+
+print("Original Plant Catalog:")
+
+
+
+for plant in plants:
+
+    print(
+
+        plant[0],
+
+        "- Seeds:", plant[1],
+
+        "- Water:", plant[2],
+
+        "- Value:", plant[3]
+
+    )
+
+
+
+
+
+print()
+
+print("=== Bubble Sort ===")
+
+
+
+bubble_result = bubble_sort(plants)
+
+
+
+for plant in bubble_result:
+
+    print(plant[0], "-", plant[1], "seeds")
+
+
+
+
+
+print()
+
+print("=== Insertion Sort ===")
+
+
+
+insertion_result = insertion_sort(plants)
+
+
+
+for plant in insertion_result:
+
+    print(plant[0], "-", plant[1], "seeds")
+
+
+
+
+
+print()
+
+print("=== Selection Sort ===")
+
+
+
+selection_result = selection_sort(plants)
+
+
+
+for plant in selection_result:
+
+    print(plant[0], "-", plant[1], "seeds")
+
+
+
+
+
+print()
+
+print("=== Quick Sort ===")
+
+
+
+quick_result = quick_sort(plants)
+
+
+
+for plant in quick_result:
+
+    print(plant[0], "-", plant[1], "seeds")
+
+
+
+
+
+print()
+
+print("=== Merge Sort ===")
+
+
+
+merge_result = merge_sort(plants)
+
+
+
+for plant in merge_result:
+
+    print(plant[0], "-", plant[1], "seeds")
+
+
+
+
+
+print()
+
+print("🌱 Plant catalog successfully sorted!")
+
+print("Sorting is based on seed cost.")
+
+`
+
+            },
+
+            9: {
+
+                title: "Searching Algorithms (Linear Search vs. Binary Search)",
+
+                code: `# Topic 9: Searching Algorithms (Linear Search vs. Binary Search)
+
+
+
+# Topic 9: Searching Algorithms
+
+# Linear Search vs Binary Search
+
+
+
+
+
+plants = [
+
+    "Bamboo",
+
+    "Cactus",
+
+    "Cattail",
+
+    "Cherry Blossom",
+
+    "Daisy",
+
+    "Hibiscus",
+
+    "Lavender",
+
+    "Lotus",
+
+    "Oregano",
+
+    "Rose",
+
+    "Sunflower",
+
+    "Tulip"
+
+]
+
+
+
+
+
+def linear_search(items, target):
+
+    for index in range(len(items)):
+
+        if items[index].lower() == target.lower():
+
+            return index
+
+
+
+    return -1
+
+
+
+
+
+def binary_search(items, target):
+
+    low = 0
+
+    high = len(items) - 1
+
+
+
+    target = target.lower()
+
+
+
+    while low <= high:
+
+        middle = (low + high) // 2
+
+
+
+        if items[middle].lower() == target:
+
+            return middle
+
+
+
+        if items[middle].lower() < target:
+
+            low = middle + 1
+
+        else:
+
+            high = middle - 1
+
+
+
+    return -1
+
+
+
+
+
+print("🔎 Garden Plant Search")
+
+print()
+
+print("Plant Catalog:")
+
+
+
+for plant in plants:
+
+    print("-", plant)
+
+
+
+
+
+search_name = "Daisy"
+
+
+
+print()
+
+print("Searching for:", search_name)
+
+
+
+linear_result = linear_search(plants, search_name)
+
+
+
+if linear_result != -1:
+
+    print("Linear Search found", plants[linear_result],
+
+          "at position", linear_result)
+
+else:
+
+    print("Linear Search: Plant not found")
+
+
+
+
+
+binary_result = binary_search(plants, search_name)
+
+
+
+if binary_result != -1:
+
+    print("Binary Search found", plants[binary_result],
+
+          "at position", binary_result)
+
+else:
+
+    print("Binary Search: Plant not found")
+
+
+
+
+
+print()
+
+print("Linear Search checks items one by one.")
+
+print("Binary Search repeatedly divides the sorted list.")
+
+
+
+`
+
+            },
+
+            10: {
+
+                title: "Advanced Strategic Paradigms (Dijkstra's Algorithm & Greedy Patterns)",
+
+                code: `# Topic 10: Advanced Strategic Paradigms (Dijkstra's Algorithm & Greedy Patterns)
+
+
+
+# Topic 10: Advanced Strategic Paradigms
+
+# Dijkstra's Algorithm + Greedy Strategy
+
+
+
+
+
+# Garden paths represented as a graph
+
+garden_paths = {
+
+    "Entrance": {
+
+        "Flower Bed": 2,
+
+        "Water Area": 4
+
+    },
+
+    "Flower Bed": {
+
+        "Entrance": 2,
+
+        "Tree Area": 3,
+
+        "Seed Storage": 5
+
+    },
+
+    "Water Area": {
+
+        "Entrance": 4,
+
+        "Tree Area": 2
+
+    },
+
+    "Tree Area": {
+
+        "Flower Bed": 3,
+
+        "Water Area": 2,
+
+        "Seed Storage": 2
+
+    },
+
+    "Seed Storage": {
+
+        "Flower Bed": 5,
+
+        "Tree Area": 2
+
+    }
+
+}
+
+
+
+
+
+def dijkstra(graph, start):
+
+    distances = {}
+
+
+
+    for place in graph:
+
+        distances[place] = 999
+
+
+
+    distances[start] = 0
+
+    visited = []
+
+
+
+    while len(visited) < len(graph):
+
+        current = None
+
+
+
+        for place in graph:
+
+            if place not in visited:
+
+                if current is None:
+
+                    current = place
+
+                elif distances[place] < distances[current]:
+
+                    current = place
+
+
+
+        visited.append(current)
+
+
+
+        for neighbor in graph[current]:
+
+            new_distance = distances[current] + graph[current][neighbor]
+
+
+
+            if new_distance < distances[neighbor]:
+
+                distances[neighbor] = new_distance
+
+
+
+    return distances
+
+
+
+
+
+# Find shortest paths from the entrance
+
+shortest_paths = dijkstra(garden_paths, "Entrance")
+
+
+
+print("🌿 Garden Navigation")
+
+print()
+
+print("Shortest paths from Entrance:")
+
+
+
+for place in shortest_paths:
+
+    print(place, "=", shortest_paths[place], "steps")
+
+
+
+
+
+# Greedy strategy
+
+plants = [
+
+    ("Oregano", 15),
+
+    ("Daisy", 25),
+
+    ("Cattail", 30),
+
+    ("Cherry Blossom", 50),
+
+    ("Sunflower", 40),
+
+    ("Tulip", 35),
+
+    ("Rose", 45),
+
+    ("Lavender", 20),
+
+    ("Bamboo", 60),
+
+    ("Cactus", 55),
+
+    ("Hibiscus", 40),
+
+    ("Lotus", 65)
+
+]
+
+
+
+best_plant = plants[0]
+
+
+
+for plant in plants:
+
+    if plant[1] > best_plant[1]:
+
+        best_plant = plant
+
+
+
+print()
+
+print("🌸 Greedy Plant Selection")
+
+print("Highest-value available plant:")
+
+print(best_plant[0])
+
+print("Value:", best_plant[1], "coins")
+
+
+
+`
+
+            },
+
+            11: {
+
+                title: "Dynamic Programming (DP), Memoization, & Divide-and-Conquer",
+
+                code: `# Topic 11: Dynamic Programming (DP), Memoization, & Divide-and-Conquer
+
+
+
+# Topic 11: Dynamic Programming
+
+# Find the best plant combination using available seeds
+
+
+
+
+
+class GardenPlanner:
+
+    def __init__(self, plants, seed_limit):
+
+        self.plants = plants
+
+        self.seed_limit = seed_limit
+
+
+
+    def find_best_plan(self):
+
+        # dp[x] stores the highest value possible using x seeds
+
+        dp = [0] * (self.seed_limit + 1)
+
+
+
+        for plant in self.plants:
+
+            for seeds in range(self.seed_limit, plant.seed_cost - 1, -1):
+
+                new_value = dp[seeds - plant.seed_cost] + plant.coin_value
+
+
+
+                if new_value > dp[seeds]:
+
+                    dp[seeds] = new_value
+
+
+
+        return dp[self.seed_limit], dp
+
+
+
+
+
+# Plant information used by the planner
+
+plants = [
+
+    ("Oregano", 15, 15),
+
+    ("Daisy", 25, 25),
+
+    ("Cattail", 30, 30),
+
+    ("Cherry Blossom", 50, 50),
+
+    ("Sunflower", 40, 40),
+
+    ("Tulip", 35, 35),
+
+    ("Rose", 45, 45),
+
+    ("Lavender", 20, 20),
+
+    ("Bamboo", 60, 60),
+
+    ("Cactus", 55, 55),
+
+    ("Hibiscus", 40, 40),
+
+    ("Lotus", 65, 65)
+
+]
+
+
+
+
+
+# Convert the simple plant data into objects
+
+class PlantData:
+
+    def __init__(self, name, seed_cost, coin_value):
+
+        self.name = name
+
+        self.seed_cost = seed_cost
+
+        self.coin_value = coin_value
+
+
+
+
+
+plant_objects = []
+
+
+
+for name, seed_cost, coin_value in plants:
+
+    plant_objects.append(
+
+        PlantData(name, seed_cost, coin_value)
+
+    )
+
+
+
+
+
+planner = GardenPlanner(plant_objects, 90)
+
+
+
+best_value, results = planner.find_best_plan()
+
+
+
+print("🌱 Dynamic Garden Planner")
+
+print()
+
+print("Available Seeds:", planner.seed_limit)
+
+print("Best Possible Garden Value:", best_value, "coins")
+
+print()
+
+print("DP Table:")
+
+print(results)
+
+
+
+print()
+
+print("Dynamic Programming was used to store")
+
+print("previous results and avoid repeating calculations.")
+
+
+
+`
+
+            },
+
+            12: {
+
+                title: "Resource Storage and Seed Bank",
+
+                code: `# Topic 12: Additional Module
+
+
+
+# Topic 12: Resource Management
+
+# Garden Resource and Plant Management System
+
+
+
+
+
+class Plant:
+
+    def __init__(self, name, emoji, seed_cost, water_needed, energy_needed, coin_value):
+
+        self.name = name
+
+        self.emoji = emoji
+
+        self.seed_cost = seed_cost
+
+        self.water_needed = water_needed
+
+        self.energy_needed = energy_needed
+
+        self.coin_value = coin_value
+
+
+
+    def show_info(self):
+
+        print(self.emoji, self.name)
+
+        print("Seeds Needed:", self.seed_cost)
+
+        print("Water Needed:", self.water_needed)
+
+        print("Energy Needed:", self.energy_needed)
+
+        print("Coin Value:", self.coin_value)
+
+        print()
+
+
+
+
+
+class GardenResources:
+
+    def __init__(self, water, seeds, energy, hope, coins):
+
+        self.water = water
+
+        self.seeds = seeds
+
+        self.energy = energy
+
+        self.hope = hope
+
+        self.coins = coins
+
+
+
+    def can_plant(self, plant):
+
+        return (
+
+            self.seeds >= plant.seed_cost
+
+            and self.water >= plant.water_needed
+
+            and self.energy >= plant.energy_needed
+
+            and self.coins >= plant.coin_value
+
+        )
+
+
+
+    def plant_crop(self, plant):
+
+        if self.can_plant(plant):
+
+            self.seeds -= plant.seed_cost
+
+            self.water -= plant.water_needed
+
+            self.energy -= plant.energy_needed
+
+            self.coins -= plant.coin_value
+
+            self.hope += 5
+
+
+
+            print("Successfully planted:", plant.name)
+
+            print("Resources used:")
+
+            print("Seeds:", plant.seed_cost)
+
+            print("Water:", plant.water_needed)
+
+            print("Energy:", plant.energy_needed)
+
+            print("Coins:", plant.coin_value)
+
+
+
+            return True
+
+
+
+        print("Not enough resources to plant", plant.name)
+
+        return False
+
+
+
+    def show_resources(self):
+
+        print("=== Garden Resources ===")
+
+        print("Water:", self.water, "L")
+
+        print("Seeds:", self.seeds)
+
+        print("Energy:", self.energy, "Wh")
+
+        print("Hope:", self.hope)
+
+        print("Coins:", self.coins)
+
+        print()
+
+
+
+
+
+# Plant catalog
+
+plants = [
+
+    Plant("Oregano", "🌿", 15, 10, 5, 15),
+
+    Plant("Daisy", "🌼", 25, 20, 10, 25),
+
+    Plant("Cattail", "🌾", 30, 25, 10, 30),
+
+    Plant("Cherry Blossom", "🌸", 50, 30, 20, 50),
+
+    Plant("Sunflower", "🌻", 40, 25, 15, 40),
+
+    Plant("Tulip", "🌷", 35, 20, 15, 35),
+
+    Plant("Rose", "🌹", 45, 30, 20, 45),
+
+    Plant("Lavender", "💜", 20, 15, 10, 20),
+
+    Plant("Bamboo", "🎋", 60, 40, 25, 60),
+
+    Plant("Cactus", "🌵", 55, 10, 20, 55),
+
+    Plant("Hibiscus", "🌺", 40, 25, 15, 40),
+
+    Plant("Lotus", "🪷", 65, 45, 30, 65)
+
+]
+
+
+
+
+
+# Starting resources
+
+resources = GardenResources(
+
+    water=200,
+
+    seeds=90,
+
+    energy=110,
+
+    hope=80,
+
+    coins=999
+
+)
+
+
+
+
+
+print("🌱 Garden Resource Management System")
+
+print()
+
+
+
+resources.show_resources()
+
+
+
+print("=== Plant Catalog ===")
+
+
+
+for plant in plants:
+
+    plant.show_info()
+
+
+
+
+
+# Display the plant choices in the game
+
+plant_choices = []
+
+
+
+for plant in plants:
+
+    plant_choices.append(
+
+        (plant.name, plant.emoji, plant.coin_value)
+
+    )
+
+
+
+addPlantsToDropdown(plant_choices)
+
+
+
+# Display the starting resources
+
+updateResources(
+
+    water=resources.water,
+
+    seeds=resources.seeds,
+
+    energy=resources.energy,
+
+    hope=resources.hope,
+
+    coins=resources.coins
+
+)
+
+
+
+print("Resource Storage and Plant Catalog ready!")
+
+
+
+
+
+print("Resource Storage and Plant dropdown unlocked!")
+
+`
+
+
+
+            }
+
+        };
+
+
+
+        async function initPyodide() {
+
+            if (pyodideInstance) return;
+
+            const consoleEl = document.getElementById("output-console");
+
+            if (consoleEl) {
+
+                consoleEl.innerHTML = `<span class="text-amber-400">Loading Python...</span><br>`;
+
+            }
+
+            try {
+
+                pyodideInstance = await loadPyodide();
+
+                // Bridge functions Python may call (pure display — no game rules)
+
+                pyodideInstance.globals.set("addPlantToGrid", addPlantToGrid);
+
+                pyodideInstance.globals.set("updateResources", updateResources);
+
+                pyodideInstance.globals.set("updateDay", updateDay);
+
+                pyodideInstance.globals.set("addPlantsToDropdown", addPlantsToDropdown);
+
+                pyodideInstance.globals.set("pushAction", pushAction);
+
+                pyodideInstance.globals.set("updateClimateQueue", updateClimateQueue);
+                pyodideInstance.globals.set("updatePlantJournal", updatePlantJournal);
+                pyodideInstance.globals.set("updateTraversalJournal", updateTraversalJournal);
+
+                await pyodideInstance.runPythonAsync(`
+
+                    import sys
+
+                    from js import document
+
+                    class Console:
+
+                        def write(self, text):
+
+                            if text and text.strip():
+
+                                el = document.getElementById("output-console")
+
+                                if el:
+
+                                    el.innerHTML += text.replace("\\n", "<br>")
+
+                        def flush(self): pass
+
+                    sys.stdout = Console()
+
+                `);
+
+                if (consoleEl) {
+
+                    consoleEl.innerHTML = `<span class="text-emerald-400">Python ready.</span><br>`;
+
+                }
+
+            } catch (err) {
+
+                if (consoleEl) {
+
+                    consoleEl.innerHTML = `<span class="text-red-400">Failed to load Python: ${err.message}</span>`;
+
+                }
+
+                throw err;
+
+            }
+
+        }
+
+
+
+        // Plant Journal: Python owns the catalog and traversal results; JavaScript renders them.
+        function updatePlantJournal(entriesJson) {
+            const entries = JSON.parse(entriesJson);
+            const grid = document.getElementById("journal-plant-grid");
+            const count = document.getElementById("journal-plant-count");
+            grid.innerHTML = "";
+            count.textContent = `${entries.length} plant entries`;
+
+            entries.forEach(plant => {
+                const card = document.createElement("article");
+                card.className = "rounded-xl border border-emerald-900/80 bg-[#152014]/80 p-3";
+                const heading = document.createElement("h4");
+                heading.className = "font-bold text-emerald-100 text-sm";
+                heading.textContent = `${plant.emoji} ${plant.name}`;
+                const description = document.createElement("p");
+                description.className = "text-xs leading-relaxed text-emerald-200/70 mt-2";
+                description.textContent = plant.description;
+                const care = document.createElement("p");
+                care.className = "text-[11px] text-emerald-400 mt-3";
+                care.textContent = plant.care;
+                card.append(heading, description, care);
+                grid.appendChild(card);
+            });
+        }
+
+        function updateTraversalJournal(order, namesJson) {
+            const names = JSON.parse(namesJson);
+            const list = document.getElementById("journal-traversal-order");
+            const description = document.getElementById("journal-traversal-description");
+            const descriptions = {
+                "BFS": "BFS / Level Order visits nodes level by level using a queue.",
+                "Preorder": "DFS Preorder visits the root first, then the left subtree, then the right subtree.",
+                "Inorder": "DFS Inorder visits the left subtree, then the root, then the right subtree.",
+                "Postorder": "DFS Postorder visits the left subtree, then the right subtree, then the root."
+            };
+            description.textContent = descriptions[order] || "Traversal result";
+            list.innerHTML = "";
+            names.forEach((name, index) => {
+                const item = document.createElement("li");
+                item.className = "rounded-lg bg-emerald-950/50 border border-emerald-900/70 px-3 py-2 flex items-center gap-2";
+                const number = document.createElement("span");
+                number.className = "text-[10px] text-emerald-500 w-5 shrink-0";
+                number.textContent = String(index + 1).padStart(2, "0");
+                const label = document.createElement("span");
+                label.className = "text-emerald-100 text-xs";
+                label.textContent = name;
+                item.append(number, label);
+                list.appendChild(item);
+            });
+            document.querySelectorAll(".traversal-button").forEach(button => {
+                const active = button.dataset.traversal === order;
+                button.classList.toggle("bg-emerald-900/60", active);
+                button.classList.toggle("text-emerald-100", active);
+                button.classList.toggle("text-emerald-200", !active);
+            });
+        }
+
+        async function openPlantJournal() {
+            const modal = document.getElementById("plant-journal-modal");
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+            try {
+                await initPyodide();
+                if (!journalPythonReady) {
+                    await pyodideInstance.runPythonAsync(topicTemplates[4].code);
+                    journalPythonReady = true;
+                }
+            } catch (err) {
+                document.getElementById("journal-plant-grid").textContent = "The journal could not load Python. Please try again.";
+                showToast("Plant Journal could not load: " + err.message);
+            }
+        }
+
+        function closePlantJournal() {
+            const modal = document.getElementById("plant-journal-modal");
+            modal.classList.add("hidden");
+            modal.classList.remove("flex");
+        }
+
+        async function selectTraversal(order) {
+            try {
+                await initPyodide();
+                if (!journalPythonReady) {
+                    await pyodideInstance.runPythonAsync(topicTemplates[4].code);
+                    journalPythonReady = true;
+                }
+                const safeOrder = ["BFS", "Preorder", "Inorder", "Postorder"].includes(order) ? order : "BFS";
+                await pyodideInstance.runPythonAsync(`show_traversal(${JSON.stringify(safeOrder)})`);
+            } catch (err) {
+                showToast("Traversal could not run: " + err.message);
+            }
+        }
+
+        // ---- Pure display bridges (called from Python) ----
+
+
+
+        // updateClimateQueue(events: list of strings)
+
+        // Renders the FIFO climate events. Pass an empty list to clear.
+
+        function updateClimateQueue(events) {
+
+            const container = document.getElementById("climate-queue");
+
+            container.innerHTML = "";
+
+            if (!events || !events.length) return;
+
+            events.forEach(event => {
+
+                const div = document.createElement("div");
+
+                div.className = "p-3 bg-amber-950/40 border border-amber-900 rounded-xl text-xs";
+
+                div.innerHTML = `
+
+                    <div class="font-bold text-amber-400">${event}</div>
+
+                    <div class="text-emerald-300/80"> </div>
+
+                `;
+
+                container.appendChild(div);
+
+            });
+
+        }
+
+
+
+        // addPlantToGrid(pos: int 0-24, name: str)
+
+        // Marks a grid cell as planted (display only).
+
+        function addPlantToGrid(pos, name) {
+
+            gardenPlants[pos] = name;
+
+            renderGarden();
+
+        }
+
+
+
+        function renderGarden() {
+
+    const grid = document.getElementById("garden-grid");
+
+    grid.innerHTML = "";
+
+
+
+    for (let i = 0; i < 25; i++) {
+
+        const cell = document.createElement("div");
+
+
+
+        cell.className = "soil min-h-[90px] rounded-2xl flex items-center justify-center text-4xl cursor-pointer transition-all hover:scale-105";
+
+        cell.textContent = gardenPlants[i] ? gardenPlants[i] : "⬜";
+
+
+
+        cell.onclick = function() {
+
+            const selectedPlant =
+
+                document.getElementById("crop-selector").value;
+
+
+
+            if (gardenPlants[i]) {
+
+                pyodideInstance.runPythonAsync(
+
+                    `interact_with_plant(${i})`
+
+                );
+
+            } else if (selectedPlant) {
+
+                pyodideInstance.runPythonAsync(
+
+                    `plant_at_position(${i}, ${JSON.stringify(selectedPlant)})`
+
+                );
+
+            }
+
+        };
+
+
+
+        grid.appendChild(cell);
+
+    }
+
+}
+
+
+
+
+
+
+
+        function updateDay(day) {
+
+            document.getElementById("day-counter").innerText = day;
+
+}
+
+
+
+
+
+        // updateResources(water, seeds, energy, hope, coins)
+
+        // Or pass a single object: updateResources({"water": n, "seeds": n, ...})
+
+        // No fallbacks that turn a valid 0 into a default. Caps used only for bar width.
+
+        function updateResources(water, seeds, energy, hope, coins) {
+
+            if (typeof water === "object" && water !== null) {
+
+                const args = water;
+
+                water = args.water !== undefined ? args.water : 0;
+
+                seeds = args.seeds !== undefined ? args.seeds : 0;
+
+                energy = args.energy !== undefined ? args.energy : 0;
+
+                hope = args.hope !== undefined ? args.hope : 0;
+
+                coins = args.coins !== undefined ? args.coins : 0;
+
+            } else {
+
+                water = water !== undefined ? water : 0;
+
+                seeds = seeds !== undefined ? seeds : 0;
+
+                energy = energy !== undefined ? energy : 0;
+
+                hope = hope !== undefined ? hope : 0;
+
+                coins = coins !== undefined ? coins : 0;
+
+            }
+
+            const waterMax = 200, seedsMax = 100, energyMax = 120, hopeMax = 100;
+
+            document.getElementById("water-text").innerText = `${water} / ${waterMax} L`;
+
+            document.getElementById("water-bar").style.width = `${Math.min(100, (water / waterMax) * 100)}%`;
+
+            document.getElementById("seeds-text").innerText = `${seeds} / ${seedsMax}`;
+
+            document.getElementById("seeds-bar").style.width = `${Math.min(100, (seeds / seedsMax) * 100)}%`;
+
+            document.getElementById("energy-text").innerText = `${energy} / ${energyMax} Wh`;
+
+            document.getElementById("energy-bar").style.width = `${Math.min(100, (energy / energyMax) * 100)}%`;
+
+            document.getElementById("hope-text").innerText = `${hope} / ${hopeMax}`;
+
+            document.getElementById("hope-bar").style.width = `${Math.min(100, (hope / hopeMax) * 100)}%`;
+
+            document.getElementById("coins-text").innerText = `${coins} Coins`;
+
+        }
+
+
+
+        // addPlantsToDropdown(plants: list of [name, emoji, cost])
+
+        function addPlantsToDropdown(plants) {
+
+            const select = document.getElementById("crop-selector");
+
+            select.innerHTML = "";
+
+            if (!plants) return;
+
+            plants.forEach(([name, emoji, cost]) => {
+
+                const option = document.createElement("option");
+
+                option.value = name;
+
+                option.textContent = `${emoji} ${name} (${cost}c)`;
+
+                select.appendChild(option);
+
+            });
+
+        }
+
+
+
+        // pushAction(action: str)
+
+        // Appends a display label to the Action History panel (no JS undo logic).
+
+        function pushAction(action) {
+
+            displayActionHistory.push(action);
+
+            if (displayActionHistory.length > 8) displayActionHistory.shift();
+
+            renderActionStack();
+
+        }
+
+
+
+        function renderActionStack() {
+
+            const container = document.getElementById("action-stack");
+
+            container.innerHTML = "";
+
+            [...displayActionHistory].reverse().forEach(act => {
+
+                const div = document.createElement("div");
+
+                div.className = "bg-emerald-950/60 border-l-2 border-amber-500 px-3 py-2 rounded text-xs text-emerald-100";
+
+                div.textContent = `→ ${act}`;
+
+                container.appendChild(div);
+
+            });
+
+        }
+
+
+
+        // UI-only: removes the last displayed label. Your Python owns the real stack.
+
+        function triggerUndo() {
+
+            if (displayActionHistory.length > 0) {
+
+                const undone = displayActionHistory.pop();
+
+                renderActionStack();
+
+                showToast(`Undid: ${undone}`);
+
+            } else {
+
+                showToast("Stack is empty.");
+
+            }
+
+        }
+
+
+
+        function showToast(msg) {
+
+            const toast = document.createElement("div");
+
+            toast.className = "fixed bottom-6 right-6 bg-emerald-900 border border-emerald-400 text-white px-5 py-3 rounded-2xl shadow-2xl z-50 text-sm";
+
+            toast.textContent = msg;
+
+            document.body.appendChild(toast);
+
+            setTimeout(() => toast.remove(), 2500);
+
+        }
+
+
+
+        function nextDay() {
+
+             if (!pyodideInstance) {
+
+                showToast("Python is still loading...");
+
+            return;
+
+    }
+
+
+
+    pyodideInstance.runPythonAsync("next_day()");
+
+}
+
+
+
+        async function runPythonCode() {
+
+            const consoleEl = document.getElementById("output-console");
+
+            consoleEl.innerHTML = `<span class="text-amber-400">Running...</span><br>`;
+
+            try {
+
+                await initPyodide();
+
+                const code = document.getElementById("code-editor").value.trim();
+
+                await pyodideInstance.runPythonAsync(code);
+
+            } catch (err) {
+
+                consoleEl.innerHTML += `<span class="text-red-400">Error: ${err.message}</span>`;
+
+            }
+
+        }
+
+
+
+        function loadTopic() {
+
+            const key = document.getElementById("topic-selector").value;
+
+            document.getElementById("code-editor").value = topicTemplates[key].code;
+
+        }
+
+
+
+        function switchTab(tab) {
+
+            document.getElementById("view-game").classList.toggle("hidden", tab !== "game");
+
+            document.getElementById("view-code").classList.toggle("hidden", tab !== "code");
+
+            document.getElementById("tab-game").classList.toggle("bg-[#283623]", tab === "game");
+
+            document.getElementById("tab-game").classList.toggle("text-emerald-100", tab === "game");
+
+            document.getElementById("tab-code").classList.toggle("bg-[#283623]", tab === "code");
+
+            document.getElementById("tab-code").classList.toggle("text-emerald-100", tab === "code");
+
+        }
+
+
+
+        document.addEventListener("keydown", event => {
+            if (event.key === "Escape") closePlantJournal();
+        });
+
+        window.onload = () => {
+
+            document.getElementById("version-badge").textContent = "v" + APP_VERSION;
+
+            lucide.createIcons();
+
+            renderGarden();
+
+            renderActionStack();
+
+            // Resources stay at 0 until your Python calls updateResources(...)
+
+            updateResources(0, 0, 0, 0, 0);
+
+
+
+            const select = document.getElementById("topic-selector");
+
+            Object.keys(topicTemplates).forEach(k => {
+
+                const opt = document.createElement("option");
+
+                opt.value = k;
+
+                opt.textContent = topicTemplates[k].title;
+
+                select.appendChild(opt);
+
+            });
+
+            loadTopic();
+
+            switchTab("game");
+
+            // Pre-load Pyodide in the background so the first Run is faster
+
+            initPyodide().catch(() => {});
+
+        };
+
+    </script>
+
+</body>
+
+</html>
